@@ -5,10 +5,11 @@
    CONFIGURACIÓN
    ========================================================= */
 
-const CLIENTE_ID = "cliente050";
+const parametros = new URLSearchParams(window.location.search);
+const CLIENTE_ID = parametros.get("cliente") || "cliente050";
 
 const URL_CLIENTES =
-    "https://raw.githubusercontent.com/sanchezjoseraul770-hash/tvlegal-control/main/clientes.json";
+    "https://raw.githubusercontent.com/sanchezjoseraul770-hash/tvlegal-web-control/main/clientes-web.json";
 
 const URL_LISTA =
     "https://raw.githubusercontent.com/sanchezjoseraul770-hash/Nombre-TVLEGAL-LG/main/LISTA-TV-LG.m3u8";
