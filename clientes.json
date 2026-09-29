@@ -1,0 +1,11 @@
+{
+    "version": "1.0",
+    "mensaje": "Servicio activo",
+    "clientes": [
+        {
+            "id": "cliente050",
+            "nombre": "Cliente 050",
+            "activo": true
+        }
+    ]
+}

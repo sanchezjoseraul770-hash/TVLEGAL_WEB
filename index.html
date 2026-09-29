@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TVLEGAL</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- VERIFICANDO ACCESO -->
+    <div id="pantallaCarga" class="pantalla">
+        <div class="mensaje">
+            <h1>TVLEGAL</h1>
+            <p>Verificando acceso...</p>
+        </div>
+    </div>
+
+    <!-- CLIENTE SUSPENDIDO -->
+    <div id="pantallaSuspendida" class="pantalla oculto">
+        <div class="mensaje">
+            <h1>SERVICIO SUSPENDIDO</h1>
+            <p>Contacte al administrador.</p>
+        </div>
+    </div>
+
+    <!-- ERROR DE INTERNET -->
+    <div id="pantallaError" class="pantalla oculto">
+        <div class="mensaje">
+            <h1>ERROR DE CONEXIÓN</h1>
+            <p>No se pudo verificar el acceso.</p>
+            <button id="btnReintentar">REINTENTAR</button>
+        </div>
+    </div>
+
+    <!-- TVLEGAL -->
+    <div id="pantallaTV" class="oculto">
+
+        <header>
+            <h1>TVLEGAL</h1>
+            <div id="estado">Cargando canales...</div>
+        </header>
+
+        <main>
+
+            <section id="reproductor">
+                <video
+                    id="videoPlayer"
+                    controls
+                    playsinline>
+                </video>
+            </section>
+
+            <section class="canales">
+
+                <input
+                    id="buscador"
+                    type="text"
+                    placeholder="Buscar canal..."
+                >
+
+                <div id="canalesContainer"></div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+    <script src="app.js"></script>
+
+</body>
+</html>
