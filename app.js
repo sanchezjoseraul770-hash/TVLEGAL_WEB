@@ -6,7 +6,12 @@
    ========================================================= */
 
 const parametros = new URLSearchParams(window.location.search);
-const CLIENTE_ID = parametros.get("cliente") || "cliente050";
+
+const CLIENTE_ID =
+    parametros.get("cliente");
+
+const CLIENTE_CODIGO =
+    parametros.get("codigo");
 
 const URL_CLIENTES =
     "https://raw.githubusercontent.com/sanchezjoseraul770-hash/tvlegal-web-control/main/clientes-web.json";
@@ -118,10 +123,15 @@ async function verificarCliente() {
         );
     }
 
+    if (!CLIENTE_ID || !CLIENTE_CODIGO) {
+        return false;
+    }
+
     const cliente =
         objeto.clientes.find(
             item =>
-                item.id === CLIENTE_ID
+                item.id === CLIENTE_ID &&
+                item.codigo === CLIENTE_CODIGO
         );
 
     if (!cliente) {
