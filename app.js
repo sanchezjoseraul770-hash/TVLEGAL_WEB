@@ -652,12 +652,26 @@ async function reproducir(canal) {
 
         shaka.polyfill.installAll();
 
-        if (!window.shakaPlayer) {
+        if (!shakaPlayer) {
 
             shakaPlayer =
                 new shaka.Player(
                     videoPlayer
                 );
+
+            shakaPlayer.configure({
+                streaming: {
+                    bufferingGoal: 8,
+                    rebufferingGoal: 3,
+                    bufferBehind: 30,
+                    retryParameters: {
+                        maxAttempts: 10,
+                        baseDelay: 400,
+                        backoffFactor: 1.5,
+                        fuzzFactor: 0.2
+                    }
+                }
+            });
 
             shakaPlayer.addEventListener(
                 "error",
