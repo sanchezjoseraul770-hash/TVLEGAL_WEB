@@ -8,7 +8,7 @@ body {
     padding: 0;
     width: 100%;
     min-height: 100%;
-    background: #000;
+    background: #000 url("img.png") center center / cover fixed no-repeat;
     color: #fff;
     font-family: Arial, Helvetica, sans-serif;
 }
@@ -44,12 +44,11 @@ button {
     justify-content: center;
 
     background:
-        radial-gradient(
-            circle at center,
-            #151515 0%,
-            #050505 55%,
-            #000 100%
-        );
+        linear-gradient(
+            rgba(0,0,0,0.68),
+            rgba(0,0,0,0.82)
+        ),
+        url("img.png") center center / cover fixed no-repeat;
 }
 
 .mensaje {
@@ -185,7 +184,12 @@ main {
 #reproductor {
     width: 100%;
 
-    background: #000;
+    background:
+        linear-gradient(
+            rgba(0,0,0,0.55),
+            rgba(0,0,0,0.70)
+        ),
+        url("img.png") center center / cover fixed no-repeat;
 
     display: flex;
     justify-content: center;
@@ -524,4 +528,81 @@ main {
 
 :fullscreen {
     background: #000;
+}
+
+/* =========================================================
+   FONDO VISUAL TVLEGAL LG
+   SOLO CAMBIO GRAFICO
+   ========================================================= */
+
+#pantallaTV {
+    min-height: 100vh;
+
+    background:
+        linear-gradient(
+            rgba(0,0,0,0.55),
+            rgba(0,0,0,0.70)
+        ),
+        url("img.png") center center / cover fixed no-repeat;
+}
+
+#reproductor {
+    background:
+        linear-gradient(
+            rgba(0,0,0,0.45),
+            rgba(0,0,0,0.65)
+        ),
+        url("img.png") center center / cover fixed no-repeat;
+}
+
+/* =========================================================
+   FONDO DEL VIDEO - SOLO GRAFICA
+   ========================================================= */
+
+#videoPlayer {
+    background: transparent !important;
+}
+
+/* =========================================================
+   FONDO VISUAL BARRA SUPERIOR
+   SOLO CAMBIO GRAFICO
+   ========================================================= */
+
+.barraTV {
+    background:
+        linear-gradient(
+            rgba(0,0,0,0.50),
+            rgba(0,0,0,0.65)
+        ),
+        url("img.png") center center / cover no-repeat;
+}
+
+/* =========================================================
+   FONDO VISUAL CONTROLES
+   SOLO CAMBIO GRAFICO
+   ========================================================= */
+
+.controlesTV {
+    background:
+        linear-gradient(
+            rgba(0,0,0,0.50),
+            rgba(0,0,0,0.65)
+        ),
+        url("img.png") center center / cover no-repeat;
+}
+
+/* =========================================================
+   AJUSTE DE TAMAÑO DEL REPRODUCTOR
+   ========================================================= */
+
+#videoPlayer {
+    max-height: 78vh;
+}
+
+/* =========================================================
+   REPRODUCTOR UN POCO MAS GRANDE
+   ========================================================= */
+
+#videoPlayer {
+    max-height: 82vh;
 }
