@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>TVLEGAL</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- VERIFICANDO ACCESO -->
+    <div id="pantallaCarga" class="pantalla">
+        <div class="mensaje">
+            <h1>TVLEGAL</h1>
+            <p>Verificando acceso...</p>
+        </div>
+    </div>
+
+
+    <!-- CLIENTE SUSPENDIDO -->
+    <div id="pantallaSuspendida" class="pantalla oculto">
+        <div class="mensaje">
+            <h1>SERVICIO SUSPENDIDO</h1>
+            <p>Contacte al administrador.</p>
+        </div>
+    </div>
+
+
+    <!-- ERROR -->
+    <div id="pantallaError" class="pantalla oculto">
+        <div class="mensaje">
+            <h1>ERROR DE CONEXIÓN</h1>
+            <p>No se pudo verificar el acceso.</p>
+
+            <button id="btnReintentar">
+                REINTENTAR
+            </button>
+        </div>
+    </div>
+
+
+    <!-- TVLEGAL -->
+    <div id="pantallaTV" class="oculto">
+
+        <header class="barraTV">
+
+            <div class="logoTV">
+                TVLEGAL
+            </div>
+
+            <div id="estado">
+                Cargando canales...
+            </div>
+
+            <button
+                id="btnPantallaCompleta"
+                class="botonTV"
+                type="button">
+                ⛶
+            </button>
+
+        </header>
+
+
+        <main>
+
+            <!-- REPRODUCTOR -->
+            <section id="reproductor">
+
+                <video
+                    id="videoPlayer"
+                    controls
+                    playsinline>
+                </video>
+
+            </section>
+
+
+            <!-- INFORMACIÓN DEL CANAL -->
+            <div id="canalActual">
+                Seleccione un canal
+            </div>
+
+
+            <!-- CONTROLES -->
+            <section class="controlesTV">
+
+                <button
+                    id="btnAnterior"
+                    class="botonTV"
+                    type="button">
+                    ◀ ANTERIOR
+                </button>
+
+                <button
+                    id="btnPlay"
+                    class="botonTV"
+                    type="button">
+                    ▶ REPRODUCIR
+                </button>
+
+                <button
+                    id="btnSiguiente"
+                    class="botonTV"
+                    type="button">
+                    SIGUIENTE ▶
+                </button>
+
+            </section>
+
+
+            <!-- CANALES -->
+            <section class="canales">
+
+                <div class="buscadorTV">
+
+                    <span>🔎</span>
+
+                    <input
+                        id="buscador"
+                        type="text"
+                        placeholder="Buscar canal..."
+                        autocomplete="off">
+
+                </div>
+
+
+                <div
+                    id="canalesContainer"
+                    tabindex="0">
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+
+    <script src="app.js"></script>
+
+</body>
+</html>

@@ -806,3 +806,36 @@ main {
     }
 }
 
+
+@media (max-width: 600px) {
+    #zonaFija {
+        display: block !important;
+        width: 100% !important;
+    }
+
+    #zonaFija #reproductor {
+        width: 100% !important;
+        grid-area: auto !important;
+    }
+
+    #zonaFija #videoPlayer {
+        width: 100% !important;
+    }
+
+    #zonaFija .canalActual {
+        width: 100% !important;
+    }
+
+    #zonaFija .controlesTV {
+        width: 100% !important;
+        grid-area: auto !important;
+    }
+
+    #zonaFija .buscadorTV {
+        width: 100% !important;
+        max-width: none !important;
+        grid-area: auto !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+}
