@@ -5,7 +5,8 @@
    CONFIGURACIÓN
    ========================================================= */
 
-const parametros = new URLSearchParams(window.location.search);
+const parametros =
+    new URLSearchParams(window.location.search);
 
 const CLIENTE_ID =
     parametros.get("cliente");
@@ -13,8 +14,10 @@ const CLIENTE_ID =
 const CLIENTE_CODIGO =
     parametros.get("codigo");
 
+
 const URL_CLIENTES =
     "https://raw.githubusercontent.com/sanchezjoseraul770-hash/tvlegal-web-control/main/clientes-web.json";
+
 
 const URL_LISTA =
     "https://raw.githubusercontent.com/sanchezjoseraul770-hash/Nombre-TVLEGAL-LG/main/LISTA-TV-LG.m3u8";
@@ -51,8 +54,35 @@ const canalesContainer =
 const estado =
     document.getElementById("estado");
 
+const canalActual =
+    document.getElementById("canalActual");
+
+const btnAnterior =
+    document.getElementById("btnAnterior");
+
+const btnSiguiente =
+    document.getElementById("btnSiguiente");
+
+const btnPlay =
+    document.getElementById("btnPlay");
+
+const btnPantallaCompleta =
+    document.getElementById(
+        "btnPantallaCompleta"
+    );
+
+
+/* =========================================================
+   VARIABLES
+   ========================================================= */
 
 let canales = [];
+
+let canalesVisibles = [];
+
+let indiceSeleccionado = 0;
+
+let indiceReproduciendo = -1;
 
 
 /* =========================================================
@@ -74,6 +104,7 @@ function mostrarPantalla(pantalla) {
 
     });
 
+
     if (pantalla) {
         pantalla.classList.remove("oculto");
     }
@@ -92,11 +123,15 @@ async function descargarTexto(url) {
             cache: "no-store"
         });
 
+
     if (!respuesta.ok) {
+
         throw new Error(
             "HTTP " + respuesta.status
         );
+
     }
+
 
     return await respuesta.text();
 }
@@ -109,23 +144,38 @@ async function descargarTexto(url) {
 async function verificarCliente() {
 
     const texto =
-        await descargarTexto(URL_CLIENTES);
+        await descargarTexto(
+            URL_CLIENTES
+        );
+
 
     const objeto =
         JSON.parse(texto);
 
+
     if (
         !objeto ||
-        !Array.isArray(objeto.clientes)
+        !Array.isArray(
+            objeto.clientes
+        )
     ) {
+
         throw new Error(
             "clientes.json inválido"
         );
+
     }
 
-    if (!CLIENTE_ID || !CLIENTE_CODIGO) {
+
+    if (
+        !CLIENTE_ID ||
+        !CLIENTE_CODIGO
+    ) {
+
         return false;
+
     }
+
 
     const cliente =
         objeto.clientes.find(
@@ -134,9 +184,11 @@ async function verificarCliente() {
                 item.codigo === CLIENTE_CODIGO
         );
 
+
     if (!cliente) {
         return false;
     }
+
 
     return cliente.activo === true;
 }
@@ -153,27 +205,47 @@ async function cargarLista() {
         estado.textContent =
             "Cargando canales...";
 
+
         const texto =
-            await descargarTexto(URL_LISTA);
+            await descargarTexto(
+                URL_LISTA
+            );
+
 
         canales =
             analizarM3U(texto);
 
-        mostrarCanales(canales);
+
+        canalesVisibles =
+            [...canales];
+
+
+        mostrarCanales(
+            canalesVisibles
+        );
+
 
         estado.textContent =
             canales.length +
             " canales disponibles";
 
+
+        if (canalesVisibles.length > 0) {
+
+            seleccionarCanal(0);
+
+        }
+
+
     } catch (error) {
 
         console.error(error);
+
 
         estado.textContent =
             "No se pudo cargar la lista";
 
     }
-
 }
 
 
@@ -189,16 +261,23 @@ function analizarM3U(texto) {
         texto.split(/\r?\n/);
 
     let nombre = "";
+
     let logo = "";
 
-    for (const lineaOriginal of lineas) {
+
+    for (
+        const lineaOriginal
+        of lineas
+    ) {
 
         const linea =
             lineaOriginal.trim();
 
+
         if (!linea) {
             continue;
         }
+
 
         if (
             linea
@@ -209,30 +288,42 @@ function analizarM3U(texto) {
             const coma =
                 linea.indexOf(",");
 
+
             if (coma >= 0) {
 
                 nombre =
                     linea
-                        .substring(coma + 1)
+                        .substring(
+                            coma + 1
+                        )
                         .trim();
+
             }
+
 
             const logoMatch =
                 linea.match(
                     /tvg-logo="([^"]*)"/i
                 );
 
+
             logo =
                 logoMatch
                     ? logoMatch[1]
                     : "";
 
+
             continue;
         }
 
+
         if (
-            linea.startsWith("http://") ||
-            linea.startsWith("https://")
+            linea.startsWith(
+                "http://"
+            ) ||
+            linea.startsWith(
+                "https://"
+            )
         ) {
 
             resultado.push({
@@ -240,7 +331,9 @@ function analizarM3U(texto) {
                 nombre:
                     nombre ||
                     "Canal " +
-                    (resultado.length + 1),
+                    (
+                        resultado.length + 1
+                    ),
 
                 logo:
                     logo,
@@ -250,10 +343,13 @@ function analizarM3U(texto) {
 
             });
 
+
             nombre = "";
+
             logo = "";
         }
     }
+
 
     return resultado;
 }
@@ -267,93 +363,470 @@ function mostrarCanales(lista) {
 
     canalesContainer.innerHTML = "";
 
-    lista.forEach(canal => {
 
-        const elemento =
-            document.createElement("div");
-
-        elemento.className =
-            "canal";
+    canalesVisibles = lista;
 
 
-        if (canal.logo) {
+    if (lista.length === 0) {
 
-            const imagen =
-                document.createElement("img");
+        canalesContainer.innerHTML =
+            '<div class="canal">' +
+            'NO SE ENCONTRARON CANALES' +
+            '</div>';
 
-            imagen.src =
-                canal.logo;
+        return;
+    }
 
-            imagen.alt =
-                "";
 
-            imagen.onerror =
-                function() {
-                    this.style.display =
-                        "none";
-                };
+    lista.forEach(
+        (canal, indice) => {
+
+            const elemento =
+                document.createElement(
+                    "div"
+                );
+
+
+            elemento.className =
+                "canal";
+
+
+            elemento.tabIndex = 0;
+
+
+            elemento.dataset.indice =
+                indice;
+
+
+            if (canal.logo) {
+
+                const imagen =
+                    document.createElement(
+                        "img"
+                    );
+
+
+                imagen.src =
+                    canal.logo;
+
+
+                imagen.alt = "";
+
+
+                imagen.onerror =
+                    function() {
+
+                        this.style.display =
+                            "none";
+
+                    };
+
+
+                elemento.appendChild(
+                    imagen
+                );
+            }
+
+
+            const nombre =
+                document.createElement(
+                    "div"
+                );
+
+
+            nombre.className =
+                "canal-nombre";
+
+
+            nombre.textContent =
+                canal.nombre;
+
 
             elemento.appendChild(
-                imagen
+                nombre
             );
+
+
+            elemento.addEventListener(
+                "click",
+                function() {
+
+                    indiceSeleccionado =
+                        indice;
+
+                    seleccionarCanal(
+                        indice
+                    );
+
+                    reproducir(
+                        canal
+                    );
+
+                }
+            );
+
+
+            elemento.addEventListener(
+                "focus",
+                function() {
+
+                    indiceSeleccionado =
+                        indice;
+
+                    actualizarEnfoque();
+
+                }
+            );
+
+
+            canalesContainer.appendChild(
+                elemento
+            );
+
         }
+    );
 
 
-        const nombre =
-            document.createElement("div");
-
-        nombre.className =
-            "canal-nombre";
-
-        nombre.textContent =
-            canal.nombre;
-
-        elemento.appendChild(
-            nombre
-        );
-
-
-        elemento.addEventListener(
-            "click",
-            function() {
-                reproducir(canal);
-            }
-        );
-
-
-        canalesContainer.appendChild(
-            elemento
-        );
-
-    });
-
+    actualizarEnfoque();
 }
 
 
 /* =========================================================
-   REPRODUCIR
+   SELECCIONAR CANAL
    ========================================================= */
 
-function reproducir(canal) {
+function seleccionarCanal(indice) {
+
+    if (
+        canalesVisibles.length === 0
+    ) {
+        return;
+    }
+
+
+    if (indice < 0) {
+        indice = 0;
+    }
+
+
+    if (
+        indice >=
+        canalesVisibles.length
+    ) {
+
+        indice =
+            canalesVisibles.length - 1;
+
+    }
+
+
+    indiceSeleccionado =
+        indice;
+
+
+    actualizarEnfoque();
+}
+
+
+/* =========================================================
+   ENFOQUE VISUAL
+   ========================================================= */
+
+function actualizarEnfoque() {
+
+    const tarjetas =
+        canalesContainer.querySelectorAll(
+            ".canal"
+        );
+
+
+    tarjetas.forEach(
+        (tarjeta, indice) => {
+
+            tarjeta.classList.toggle(
+                "enfocado",
+                indice ===
+                indiceSeleccionado
+            );
+
+        }
+    );
+
+
+    const tarjetaActual =
+        tarjetas[
+            indiceSeleccionado
+        ];
+
+
+    if (tarjetaActual) {
+
+        tarjetaActual.scrollIntoView({
+            behavior: "smooth",
+            block: "nearest",
+            inline: "nearest"
+        });
+
+    }
+}
+
+
+/* =========================================================
+   SHAKA PLAYER
+   ========================================================= */
+
+let shakaPlayer = null;
+
+
+/* =========================================================
+   INICIAR SHAKA
+   ========================================================= */
+
+async function iniciarShaka() {
+
+    if (!window.shaka) {
+
+        throw new Error(
+            "Shaka Player no está disponible"
+        );
+
+    }
+
+
+    shaka.polyfill.installAll();
+
+
+    if (
+        !shaka.Player.isBrowserSupported()
+    ) {
+
+        throw new Error(
+            "El navegador no soporta Shaka Player"
+        );
+
+    }
+
+
+    shakaPlayer =
+        new shaka.Player(
+            videoPlayer
+        );
+
+
+    shakaPlayer.addEventListener(
+        "error",
+        function(event) {
+
+            console.error(
+                "Error Shaka:",
+                event.detail
+            );
+
+        }
+    );
+
 
     console.log(
-        "Reproduciendo:",
+        "Shaka Player iniciado correctamente"
+    );
+}
+
+
+/* =========================================================
+   REPRODUCIR CON SHAKA
+   ========================================================= */
+
+async function reproducir(canal) {
+
+    console.log(
+        "Reproduciendo con Shaka:",
         canal.nombre
     );
 
-    videoPlayer.src =
-        canal.url;
 
-    videoPlayer.play()
-        .catch(error => {
+    indiceReproduciendo =
+        canalesVisibles.indexOf(
+            canal
+        );
 
-            console.log(
-                "Reproducción:",
-                error
-            );
 
-        });
+    canalActual.textContent =
+        canal.nombre;
 
+
+    const tarjetas =
+        canalesContainer.querySelectorAll(
+            ".canal"
+        );
+
+
+    tarjetas.forEach(
+        tarjeta =>
+            tarjeta.classList.remove(
+                "reproduciendo"
+            )
+    );
+
+
+    if (
+        tarjetas[indiceReproduciendo]
+    ) {
+
+        tarjetas[
+            indiceReproduciendo
+        ].classList.add(
+            "reproduciendo"
+        );
+
+    }
+
+
+    if (!shakaPlayer) {
+
+        console.error(
+            "Shaka Player no está iniciado"
+        );
+
+        return;
+    }
+
+
+    try {
+
+        videoPlayer.pause();
+
+
+        await shakaPlayer.load(
+            canal.url
+        );
+
+
+        await videoPlayer.play();
+
+
+        btnPlay.textContent =
+            "❚❚ PAUSAR";
+
+
+        console.log(
+            "Canal cargado correctamente:",
+            canal.nombre
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Error reproduciendo con Shaka:",
+            error
+        );
+
+
+        btnPlay.textContent =
+            "▶ REPRODUCIR";
+
+
+        canalActual.textContent =
+            canal.nombre +
+            " — ERROR DE REPRODUCCIÓN";
+
+    }
+}
+
+
+/* =========================================================
+   CANAL ANTERIOR
+   ========================================================= */
+
+/* =========================================================
+   CANAL ANTERIOR
+   ========================================================= */
+
+function canalAnterior() {
+
+    if (
+        canalesVisibles.length === 0
+    ) {
+        return;
+    }
+
+
+    let indice =
+        indiceReproduciendo;
+
+
+    if (indice < 0) {
+
+        indice =
+            indiceSeleccionado;
+
+    }
+
+
+    indice--;
+
+
+    if (indice < 0) {
+
+        indice =
+            canalesVisibles.length - 1;
+
+    }
+
+
+    seleccionarCanal(indice);
+
+
+    reproducir(
+        canalesVisibles[indice]
+    );
+}
+
+
+/* =========================================================
+   CANAL SIGUIENTE
+   ========================================================= */
+
+function canalSiguiente() {
+
+    if (
+        canalesVisibles.length === 0
+    ) {
+        return;
+    }
+
+
+    let indice =
+        indiceReproduciendo;
+
+
+    if (indice < 0) {
+
+        indice =
+            indiceSeleccionado;
+
+    }
+
+
+    indice++;
+
+
+    if (
+        indice >=
+        canalesVisibles.length
+    ) {
+
+        indice = 0;
+
+    }
+
+
+    seleccionarCanal(indice);
+
+
+    reproducir(
+        canalesVisibles[indice]
+    );
 }
 
 
@@ -370,19 +843,499 @@ buscador.addEventListener(
                 .toLowerCase()
                 .trim();
 
+
         const filtrados =
-            canales.filter(canal =>
-                canal.nombre
-                    .toLowerCase()
-                    .includes(texto)
+            canales.filter(
+                canal =>
+                    canal.nombre
+                        .toLowerCase()
+                        .includes(texto)
             );
+
 
         mostrarCanales(
             filtrados
         );
 
+
+        indiceSeleccionado = 0;
+
+
+        actualizarEnfoque();
     }
 );
+
+
+/* =========================================================
+   BOTÓN PLAY / PAUSA
+   ========================================================= */
+
+btnPlay.addEventListener(
+    "click",
+    function() {
+
+        if (
+            videoPlayer.paused
+        ) {
+
+            videoPlayer.play();
+
+            this.textContent =
+                "❚❚ PAUSAR";
+
+        } else {
+
+            videoPlayer.pause();
+
+            this.textContent =
+                "▶ REPRODUCIR";
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   BOTONES ANTERIOR / SIGUIENTE
+   ========================================================= */
+
+btnAnterior.addEventListener(
+    "click",
+    canalAnterior
+);
+
+
+btnSiguiente.addEventListener(
+    "click",
+    canalSiguiente
+);
+
+
+/* =========================================================
+   PANTALLA COMPLETA
+   ========================================================= */
+
+async function pantallaCompleta() {
+
+    try {
+
+        if (
+            !document.fullscreenElement
+        ) {
+
+            await document.documentElement
+                .requestFullscreen();
+
+        } else {
+
+            await document.exitFullscreen();
+
+        }
+
+    } catch (error) {
+
+        console.log(
+            "Pantalla completa:",
+            error
+        );
+
+    }
+}
+
+
+btnPantallaCompleta.addEventListener(
+    "click",
+    pantallaCompleta
+);
+
+
+/* =========================================================
+   TECLADO / CONTROL REMOTO SMART TV
+   ========================================================= */
+
+document.addEventListener(
+    "keydown",
+    function(event) {
+
+        const tecla =
+            event.key;
+
+
+        /* ENTER / OK */
+
+        if (
+            tecla === "Enter" ||
+            tecla === "NumpadEnter"
+        ) {
+
+            const elemento =
+                document.activeElement;
+
+
+            if (
+                elemento === buscador
+            ) {
+
+                return;
+
+            }
+
+
+            if (
+                canalesVisibles.length > 0
+            ) {
+
+                reproducir(
+                    canalesVisibles[
+                        indiceSeleccionado
+                    ]
+                );
+
+            }
+
+
+            event.preventDefault();
+
+            return;
+        }
+
+
+        /* FLECHA DERECHA */
+
+        if (
+            tecla === "ArrowRight"
+        ) {
+
+            moverDerecha();
+
+            event.preventDefault();
+
+            return;
+        }
+
+
+        /* FLECHA IZQUIERDA */
+
+        if (
+            tecla === "ArrowLeft"
+        ) {
+
+            moverIzquierda();
+
+            event.preventDefault();
+
+            return;
+        }
+
+
+        /* FLECHA ABAJO */
+
+        if (
+            tecla === "ArrowDown"
+        ) {
+
+            moverAbajo();
+
+            event.preventDefault();
+
+            return;
+        }
+
+
+        /* FLECHA ARRIBA */
+
+        if (
+            tecla === "ArrowUp"
+        ) {
+
+            moverArriba();
+
+            event.preventDefault();
+
+            return;
+        }
+
+
+        /* ESC */
+
+        if (
+            tecla === "Escape"
+        ) {
+
+            if (
+                document.fullscreenElement
+            ) {
+
+                document.exitFullscreen();
+
+            }
+
+            return;
+        }
+
+
+        /* ESPACIO */
+
+        if (
+            tecla === " "
+        ) {
+
+            if (
+                videoPlayer.paused
+            ) {
+
+                videoPlayer.play();
+
+                btnPlay.textContent =
+                    "❚❚ PAUSAR";
+
+            } else {
+
+                videoPlayer.pause();
+
+                btnPlay.textContent =
+                    "▶ REPRODUCIR";
+
+            }
+
+
+            event.preventDefault();
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   NAVEGACIÓN DERECHA
+   ========================================================= */
+
+function moverDerecha() {
+
+    if (
+        canalesVisibles.length === 0
+    ) {
+        return;
+    }
+
+
+    if (
+        indiceSeleccionado <
+        canalesVisibles.length - 1
+    ) {
+
+        indiceSeleccionado++;
+
+    } else {
+
+        indiceSeleccionado = 0;
+
+    }
+
+
+    actualizarEnfoque();
+}
+
+
+/* =========================================================
+   NAVEGACIÓN IZQUIERDA
+   ========================================================= */
+
+function moverIzquierda() {
+
+    if (
+        canalesVisibles.length === 0
+    ) {
+        return;
+    }
+
+
+    if (
+        indiceSeleccionado > 0
+    ) {
+
+        indiceSeleccionado--;
+
+    } else {
+
+        indiceSeleccionado =
+            canalesVisibles.length - 1;
+
+    }
+
+
+    actualizarEnfoque();
+}
+
+
+/* =========================================================
+   NAVEGACIÓN ARRIBA
+   ========================================================= */
+
+function moverArriba() {
+
+    if (
+        canalesVisibles.length === 0
+    ) {
+        return;
+    }
+
+
+    const tarjetas =
+        canalesContainer.querySelectorAll(
+            ".canal"
+        );
+
+
+    if (tarjetas.length === 0) {
+        return;
+    }
+
+
+    const tarjetaActual =
+        tarjetas[indiceSeleccionado];
+
+
+    if (!tarjetaActual) {
+        return;
+    }
+
+
+    const columnas =
+        calcularColumnas();
+
+
+    let nuevoIndice =
+        indiceSeleccionado -
+        columnas;
+
+
+    if (nuevoIndice < 0) {
+
+        nuevoIndice =
+            indiceSeleccionado;
+
+    }
+
+
+    indiceSeleccionado =
+        nuevoIndice;
+
+
+    actualizarEnfoque();
+}
+
+
+/* =========================================================
+   NAVEGACIÓN ABAJO
+   ========================================================= */
+
+function moverAbajo() {
+
+    if (
+        canalesVisibles.length === 0
+    ) {
+        return;
+    }
+
+
+    const columnas =
+        calcularColumnas();
+
+
+    let nuevoIndice =
+        indiceSeleccionado +
+        columnas;
+
+
+    if (
+        nuevoIndice >=
+        canalesVisibles.length
+    ) {
+
+        nuevoIndice =
+            indiceSeleccionado;
+
+    }
+
+
+    indiceSeleccionado =
+        nuevoIndice;
+
+
+    actualizarEnfoque();
+}
+
+
+/* =========================================================
+   CALCULAR COLUMNAS
+   ========================================================= */
+
+function calcularColumnas() {
+
+    const tarjetas =
+        canalesContainer.querySelectorAll(
+            ".canal"
+        );
+
+
+    if (
+        tarjetas.length < 2
+    ) {
+        return 1;
+    }
+
+
+    const primera =
+        tarjetas[0];
+
+    const segunda =
+        tarjetas[1];
+
+
+    const primeraTop =
+        primera.getBoundingClientRect().top;
+
+
+    let columnas = 1;
+
+
+    for (
+        let i = 1;
+        i < tarjetas.length;
+        i++
+    ) {
+
+        const top =
+            tarjetas[i]
+                .getBoundingClientRect()
+                .top;
+
+
+        if (
+            Math.abs(
+                top - primeraTop
+            ) < 10
+        ) {
+
+            columnas++;
+
+        } else {
+
+            break;
+
+        }
+
+    }
+
+
+    return Math.max(
+        1,
+        columnas
+    );
+}
 
 
 /* =========================================================
@@ -395,10 +1348,12 @@ async function iniciarTVLEGAL() {
         pantallaCarga
     );
 
+
     try {
 
         const activo =
             await verificarCliente();
+
 
         if (!activo) {
 
@@ -409,11 +1364,17 @@ async function iniciarTVLEGAL() {
             return;
         }
 
+
         mostrarPantalla(
             pantallaTV
         );
 
+
+        await iniciarShaka();
+
+
         await cargarLista();
+
 
     } catch (error) {
 
@@ -422,12 +1383,12 @@ async function iniciarTVLEGAL() {
             error
         );
 
+
         mostrarPantalla(
             pantallaError
         );
 
     }
-
 }
 
 

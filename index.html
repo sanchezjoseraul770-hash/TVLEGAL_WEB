@@ -2,8 +2,13 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
     <title>TVLEGAL</title>
+
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -17,6 +22,7 @@
         </div>
     </div>
 
+
     <!-- CLIENTE SUSPENDIDO -->
     <div id="pantallaSuspendida" class="pantalla oculto">
         <div class="mensaje">
@@ -25,42 +31,110 @@
         </div>
     </div>
 
-    <!-- ERROR DE INTERNET -->
+
+    <!-- ERROR -->
     <div id="pantallaError" class="pantalla oculto">
         <div class="mensaje">
             <h1>ERROR DE CONEXIÓN</h1>
             <p>No se pudo verificar el acceso.</p>
-            <button id="btnReintentar">REINTENTAR</button>
+
+            <button id="btnReintentar">
+                REINTENTAR
+            </button>
         </div>
     </div>
+
 
     <!-- TVLEGAL -->
     <div id="pantallaTV" class="oculto">
 
-        <header>
-            <h1>TVLEGAL</h1>
-            <div id="estado">Cargando canales...</div>
+        <header class="barraTV">
+
+            <div class="logoTV">
+                TVLEGAL
+            </div>
+
+            <div id="estado">
+                Cargando canales...
+            </div>
+
+            <button
+                id="btnPantallaCompleta"
+                class="botonTV"
+                type="button">
+                ⛶
+            </button>
+
         </header>
+
 
         <main>
 
+            <!-- REPRODUCTOR -->
             <section id="reproductor">
+
                 <video
                     id="videoPlayer"
                     controls
                     playsinline>
                 </video>
+
             </section>
 
+
+            <!-- INFORMACIÓN DEL CANAL -->
+            <div id="canalActual">
+                Seleccione un canal
+            </div>
+
+
+            <!-- CONTROLES -->
+            <section class="controlesTV">
+
+                <button
+                    id="btnAnterior"
+                    class="botonTV"
+                    type="button">
+                    ◀ ANTERIOR
+                </button>
+
+                <button
+                    id="btnPlay"
+                    class="botonTV"
+                    type="button">
+                    ▶ REPRODUCIR
+                </button>
+
+                <button
+                    id="btnSiguiente"
+                    class="botonTV"
+                    type="button">
+                    SIGUIENTE ▶
+                </button>
+
+            </section>
+
+
+            <!-- CANALES -->
             <section class="canales">
 
-                <input
-                    id="buscador"
-                    type="text"
-                    placeholder="Buscar canal..."
-                >
+                <div class="buscadorTV">
 
-                <div id="canalesContainer"></div>
+                    <span>🔎</span>
+
+                    <input
+                        id="buscador"
+                        type="text"
+                        placeholder="Buscar canal..."
+                        autocomplete="off">
+
+                </div>
+
+
+                <div
+                    id="canalesContainer"
+                    tabindex="0">
+                </div>
 
             </section>
 
@@ -68,6 +142,11 @@
 
     </div>
 
+
+    <!-- SHAKA PLAYER -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.16.0/shaka-player.compiled.js"></script>
+
+    <!-- TVLEGAL -->
     <script src="app.js"></script>
 
 </body>
