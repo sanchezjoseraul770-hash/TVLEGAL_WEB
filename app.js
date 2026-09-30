@@ -83,6 +83,7 @@ let canalesVisibles = [];
 let indiceSeleccionado = 0;
 
 let indiceReproduciendo = -1;
+let shakaPlayer = null;
 
 
 /* =========================================================
@@ -602,33 +603,25 @@ function actualizarEnfoque() {
    REPRODUCIR
    ========================================================= */
 
-function reproducir(canal) {
+async function reproducir(canal) {
 
     console.log(
         "Reproduciendo:",
         canal.nombre
     );
 
-
     indiceReproduciendo =
         canalesVisibles.indexOf(
             canal
         );
 
-
-    videoPlayer.src =
-        canal.url;
-
-
     canalActual.textContent =
         canal.nombre;
-
 
     const tarjetas =
         canalesContainer.querySelectorAll(
             ".canal"
         );
-
 
     tarjetas.forEach(
         tarjeta =>
@@ -636,7 +629,6 @@ function reproducir(canal) {
                 "reproduciendo"
             )
     );
-
 
     if (
         tarjetas[indiceReproduciendo]
@@ -650,22 +642,51 @@ function reproducir(canal) {
 
     }
 
+    try {
 
-    videoPlayer.play()
-        .then(() => {
-
-            btnPlay.textContent =
-                "❚❚ PAUSAR";
-
-        })
-        .catch(error => {
-
-            console.log(
-                "Reproducción:",
-                error
+        if (!window.shaka) {
+            throw new Error(
+                "Shaka Player no está cargado"
             );
+        }
 
-        });
+        shaka.polyfill.installAll();
+
+        if (!window.shakaPlayer) {
+
+            shakaPlayer =
+                new shaka.Player(
+                    videoPlayer
+                );
+
+            shakaPlayer.addEventListener(
+                "error",
+                event => {
+                    console.error(
+                        "Error Shaka:",
+                        event.detail
+                    );
+                }
+            );
+        }
+
+        await shakaPlayer.load(
+            canal.url
+        );
+
+        await videoPlayer.play();
+
+        btnPlay.textContent =
+            "❚❚ PAUSAR";
+
+    } catch (error) {
+
+        console.error(
+            "Error reproduciendo canal:",
+            error
+        );
+
+    }
 }
 
 
