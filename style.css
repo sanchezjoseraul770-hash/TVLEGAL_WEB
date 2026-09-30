@@ -606,3 +606,203 @@ main {
 #videoPlayer {
     max-height: 82vh;
 }
+
+/* =========================================================
+   REPRODUCTOR FIJO MIENTRAS SE DESPLAZAN LOS CANALES
+   ========================================================= */
+
+#reproductor {
+    position: sticky;
+    top: 75px;
+    z-index: 90;
+}
+
+
+/* =========================================================
+   AJUSTE DEL REPRODUCTOR FIJO
+   ========================================================= */
+
+#videoPlayer {
+    max-height: 40vh;
+}
+
+@media (max-width: 600px) {
+    #videoPlayer {
+        max-height: 30vh;
+    }
+}
+
+
+/* =========================================================
+   ZONA FIJA TVLEGAL
+   REPRODUCTOR + CANAL + CONTROLES + BUSCADOR
+   ========================================================= */
+
+#zonaFija {
+    position: sticky;
+    top: 75px;
+    z-index: 90;
+
+    background: #000;
+}
+
+#zonaFija #reproductor {
+    position: relative;
+    top: auto;
+    z-index: auto;
+}
+
+#zonaFija .buscadorTV {
+    margin-bottom: 0;
+    padding: 15px 25px;
+    max-width: none;
+
+    background:
+        linear-gradient(
+            rgba(0,0,0,0.50),
+            rgba(0,0,0,0.65)
+        ),
+        url("img.png") center center / cover no-repeat;
+}
+
+@media (max-width: 600px) {
+
+    #zonaFija .buscadorTV {
+        padding: 10px 15px;
+    }
+
+}
+
+
+/* =========================================================
+   BUSCADOR MAS PEQUEÑO
+   ========================================================= */
+
+#zonaFija .buscadorTV {
+    max-width: 450px;
+}
+
+@media (max-width: 600px) {
+
+    #zonaFija .buscadorTV {
+        max-width: 100%;
+    }
+
+}
+
+
+/* =========================================================
+   BUSCADOR Y BOTONES EN LA MISMA LINEA
+   ========================================================= */
+
+#zonaFija {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+}
+
+#zonaFija #reproductor {
+    grid-column: 1 / 4;
+    grid-row: 1;
+}
+
+#zonaFija #canalActual {
+    grid-column: 1 / 4;
+    grid-row: 2;
+}
+
+#zonaFija .controlesTV {
+    grid-column: 2;
+    grid-row: 3;
+    width: auto;
+    padding: 15px;
+}
+
+#zonaFija .buscadorTV {
+    grid-column: 1;
+    grid-row: 3;
+
+    width: 100%;
+    max-width: 450px;
+    margin: 0;
+    padding: 15px 25px;
+}
+
+@media (max-width: 700px) {
+
+    #zonaFija {
+        grid-template-columns: 1fr;
+    }
+
+    #zonaFija #reproductor,
+    #zonaFija #canalActual,
+    #zonaFija .controlesTV,
+    #zonaFija .buscadorTV {
+        grid-column: 1;
+    }
+
+    #zonaFija .controlesTV {
+        grid-row: 3;
+    }
+
+    #zonaFija .buscadorTV {
+        grid-row: 4;
+        max-width: 100%;
+    }
+
+}
+
+
+/* =========================================================
+   BUSCADOR Y BOTONES MAS A LA DERECHA
+   ========================================================= */
+
+#zonaFija .buscadorTV {
+    grid-column: 2;
+    justify-self: end;
+}
+
+#zonaFija .controlesTV {
+    grid-column: 3;
+    justify-self: start;
+}
+
+
+/* CORREGIR ESPACIO SUPERIOR DE LA LISTA DE CANALES */
+.canales {
+    scroll-margin-top: 75px;
+}
+
+#canalesContainer {
+    scroll-margin-top: 75px;
+    padding-top: 10px;
+}
+
+
+/* ESPACIO REAL PARA QUE LOS PRIMEROS CANALES NO QUEDEN TAPADOS */
+.canales {
+    padding-top: 25px;
+}
+
+#canalesContainer {
+    scroll-padding-top: 0;
+}
+
+
+/* CARDS DE CANALES UN POCO MAS PEQUEÑAS */
+#canalesContainer {
+    grid-template-columns: repeat(
+        auto-fill,
+        minmax(180px, 1fr)
+    );
+}
+
+@media (max-width: 1000px) {
+    #canalesContainer {
+        grid-template-columns: repeat(
+            auto-fill,
+            minmax(155px, 1fr)
+        );
+    }
+}
+

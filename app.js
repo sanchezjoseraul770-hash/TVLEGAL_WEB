@@ -561,85 +561,51 @@ function actualizarEnfoque() {
 
     if (tarjetaActual) {
 
-        tarjetaActual.scrollIntoView({
-            behavior: "smooth",
-            block: "nearest",
-            inline: "nearest"
-        });
+        const zonaFija =
+            document.getElementById("zonaFija");
 
-    }
-}
+        const alturaZonaFija =
+            zonaFija
+                ? zonaFija.getBoundingClientRect().height
+                : 0;
 
+        const rect =
+            tarjetaActual.getBoundingClientRect();
 
-/* =========================================================
-   SHAKA PLAYER
-   ========================================================= */
+        const limiteSuperior =
+            alturaZonaFija + 50;
 
-let shakaPlayer = null;
+        const limiteInferior =
+            window.innerHeight - 20;
 
+        if (rect.top < limiteSuperior) {
 
-/* =========================================================
-   INICIAR SHAKA
-   ========================================================= */
+            window.scrollBy({
+                top: rect.top - limiteSuperior,
+                behavior: "smooth"
+            });
 
-async function iniciarShaka() {
+        } else if (rect.bottom > limiteInferior) {
 
-    if (!window.shaka) {
-
-        throw new Error(
-            "Shaka Player no está disponible"
-        );
-
-    }
-
-
-    shaka.polyfill.installAll();
-
-
-    if (
-        !shaka.Player.isBrowserSupported()
-    ) {
-
-        throw new Error(
-            "El navegador no soporta Shaka Player"
-        );
-
-    }
-
-
-    shakaPlayer =
-        new shaka.Player(
-            videoPlayer
-        );
-
-
-    shakaPlayer.addEventListener(
-        "error",
-        function(event) {
-
-            console.error(
-                "Error Shaka:",
-                event.detail
-            );
+            window.scrollBy({
+                top: rect.bottom - limiteInferior,
+                behavior: "smooth"
+            });
 
         }
-    );
 
-
-    console.log(
-        "Shaka Player iniciado correctamente"
-    );
+    }
 }
 
 
 /* =========================================================
-   REPRODUCIR CON SHAKA
+   REPRODUCIR
    ========================================================= */
 
-async function reproducir(canal) {
+function reproducir(canal) {
 
     console.log(
-        "Reproduciendo con Shaka:",
+        "Reproduciendo:",
         canal.nombre
     );
 
@@ -648,6 +614,10 @@ async function reproducir(canal) {
         canalesVisibles.indexOf(
             canal
         );
+
+
+    videoPlayer.src =
+        canal.url;
 
 
     canalActual.textContent =
@@ -681,62 +651,23 @@ async function reproducir(canal) {
     }
 
 
-    if (!shakaPlayer) {
+    videoPlayer.play()
+        .then(() => {
 
-        console.error(
-            "Shaka Player no está iniciado"
-        );
+            btnPlay.textContent =
+                "❚❚ PAUSAR";
 
-        return;
-    }
+        })
+        .catch(error => {
 
+            console.log(
+                "Reproducción:",
+                error
+            );
 
-    try {
-
-        videoPlayer.pause();
-
-
-        await shakaPlayer.load(
-            canal.url
-        );
-
-
-        await videoPlayer.play();
-
-
-        btnPlay.textContent =
-            "❚❚ PAUSAR";
-
-
-        console.log(
-            "Canal cargado correctamente:",
-            canal.nombre
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "Error reproduciendo con Shaka:",
-            error
-        );
-
-
-        btnPlay.textContent =
-            "▶ REPRODUCIR";
-
-
-        canalActual.textContent =
-            canal.nombre +
-            " — ERROR DE REPRODUCCIÓN";
-
-    }
+        });
 }
 
-
-/* =========================================================
-   CANAL ANTERIOR
-   ========================================================= */
 
 /* =========================================================
    CANAL ANTERIOR
@@ -1368,9 +1299,6 @@ async function iniciarTVLEGAL() {
         mostrarPantalla(
             pantallaTV
         );
-
-
-        await iniciarShaka();
 
 
         await cargarLista();

@@ -70,8 +70,11 @@
 
         <main>
 
-            <!-- REPRODUCTOR -->
-            <section id="reproductor">
+            <!-- ZONA FIJA: REPRODUCTOR + CONTROLES + BUSCADOR -->
+            <div id="zonaFija">
+
+                <!-- REPRODUCTOR -->
+                <section id="reproductor">
 
                 <video
                     id="videoPlayer"
@@ -115,21 +118,25 @@
             </section>
 
 
+            <!-- BUSCADOR -->
+            <div class="buscadorTV">
+
+                <span>🔎</span>
+
+                <input
+                    id="buscador"
+                    type="text"
+                    placeholder="Buscar canal..."
+                    autocomplete="off">
+
+            </div>
+
+            </div>
+            <!-- FIN ZONA FIJA -->
+
+
             <!-- CANALES -->
             <section class="canales">
-
-                <div class="buscadorTV">
-
-                    <span>🔎</span>
-
-                    <input
-                        id="buscador"
-                        type="text"
-                        placeholder="Buscar canal..."
-                        autocomplete="off">
-
-                </div>
-
 
                 <div
                     id="canalesContainer"
@@ -143,10 +150,6 @@
     </div>
 
 
-    <!-- SHAKA PLAYER -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.16.0/shaka-player.compiled.js"></script>
-
-    <!-- TVLEGAL -->
     <script src="app.js"></script>
 
 </body>
