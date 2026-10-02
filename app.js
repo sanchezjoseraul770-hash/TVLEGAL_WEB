@@ -84,6 +84,595 @@ let indiceSeleccionado = 0;
 
 let indiceReproduciendo = -1;
 let shakaPlayer = null;
+let generacionReproduccion = 0;
+let cargaAnteriorEnCurso = false;
+
+async function cancelarCargaAnterior() {
+
+    if (!shakaPlayer) return;
+
+    try {
+
+        /*
+         * Pausar primero evita que el elemento de video
+         * continúe intentando reproducir mientras cambiamos.
+         */
+        videoPlayer.pause();
+
+        /*
+         * Cancelamos la carga actual de Shaka.
+         * No destruimos el reproductor.
+         */
+        if (cargaAnteriorEnCurso) {
+
+            console.log(
+                "TVLEGAL: cancelando carga anterior"
+            );
+
+            await shakaPlayer.cancelLoad();
+
+            cargaAnteriorEnCurso = false;
+        }
+
+    } catch (e) {
+
+        console.warn(
+            "TVLEGAL: no se pudo cancelar la carga anterior",
+            e
+        );
+
+        cargaAnteriorEnCurso = false;
+    }
+}
+
+
+/* =========================================================
+   RECUPERACIÓN AUTOMÁTICA DEL STREAM
+   ========================================================= */
+
+let recuperacionTimer = null;
+let recuperacionFuerteTimer = null;
+let vigilanciaCongelamientoTimer = null;
+
+let recuperacionEnCurso = false;
+let congelamientoDetectado = false;
+
+let ultimaURLReproduciendo = "";
+let ultimoTiempoVideo = 0;
+let ultimoCambioVideo = Date.now();
+let inicioCongelamiento = 0;
+
+/*
+ * CONTROL PROFESIONAL DE ERRORES
+ *
+ * Evita bucles infinitos cuando un servidor
+ * deja de responder o entrega segmentos inválidos.
+ */
+let errorRecuperacionTimer = null;
+let erroresRecuperacion = 0;
+let generacionUltimoError = 0;
+
+function limpiarRecuperacionErrores() {
+
+    if (errorRecuperacionTimer) {
+
+        clearTimeout(
+            errorRecuperacionTimer
+        );
+
+        errorRecuperacionTimer = null;
+    }
+
+}
+
+function programarRecuperacionError(
+    generacion,
+    url
+) {
+
+    if (!url) return;
+
+    if (
+        generacion !== generacionReproduccion
+    ) {
+        return;
+    }
+
+    if (
+        errorRecuperacionTimer
+    ) {
+        return;
+    }
+
+    /*
+     * Máximo 2 recuperaciones consecutivas
+     * para evitar un bucle infinito.
+     */
+    if (erroresRecuperacion >= 2) {
+
+        console.warn(
+            "TVLEGAL: máximo de recuperaciones por error alcanzado"
+        );
+
+        return;
+    }
+
+    erroresRecuperacion++;
+
+    generacionUltimoError =
+        generacion;
+
+    console.warn(
+        "TVLEGAL: recuperación por error programada",
+        erroresRecuperacion,
+        "URL:",
+        url
+    );
+
+    errorRecuperacionTimer =
+        setTimeout(async () => {
+
+            errorRecuperacionTimer =
+                null;
+
+            /*
+             * El usuario pudo cambiar de canal
+             * durante la espera.
+             */
+            if (
+                generacion !== generacionReproduccion
+            ) {
+
+                console.log(
+                    "TVLEGAL: recuperación de error cancelada por cambio de canal"
+                );
+
+                return;
+            }
+
+            if (
+                ultimaURLReproduciendo !== url
+            ) {
+
+                console.log(
+                    "TVLEGAL: recuperación cancelada, URL diferente"
+                );
+
+                return;
+            }
+
+            if (!shakaPlayer) return;
+
+            try {
+
+                recuperacionEnCurso = true;
+
+                console.log(
+                    "TVLEGAL: RECUPERACIÓN POR ERROR",
+                    erroresRecuperacion
+                );
+
+                videoPlayer.pause();
+
+                await shakaPlayer.unload();
+
+                /*
+                 * Volvemos a comprobar la generación
+                 * después de descargar el stream.
+                 */
+                if (
+                    generacion !== generacionReproduccion ||
+                    ultimaURLReproduciendo !== url
+                ) {
+
+                    console.log(
+                        "TVLEGAL: recuperación descartada"
+                    );
+
+                    return;
+                }
+
+                await shakaPlayer.load(
+                    url
+                );
+
+                await videoPlayer.play();
+
+                console.log(
+                    "TVLEGAL: recuperación por error completada"
+                );
+
+                erroresRecuperacion = 0;
+                congelamientoDetectado = false;
+                inicioCongelamiento = 0;
+                ultimoCambioVideo = Date.now();
+
+            } catch (e) {
+
+                console.error(
+                    "TVLEGAL: recuperación por error falló",
+                    e
+                );
+
+            } finally {
+
+                recuperacionEnCurso = false;
+
+            }
+
+        }, 2000);
+}
+
+function limpiarRecuperacion() {
+
+    if (recuperacionTimer) {
+        clearTimeout(recuperacionTimer);
+        recuperacionTimer = null;
+    }
+
+    if (recuperacionFuerteTimer) {
+        clearTimeout(recuperacionFuerteTimer);
+        recuperacionFuerteTimer = null;
+    }
+}
+
+function iniciarVigilanciaStream() {
+
+    if (!videoPlayer) return;
+
+    if (videoPlayer.dataset.vigilanciaProfesional === "1") return;
+
+    videoPlayer.dataset.vigilanciaProfesional = "1";
+
+    videoPlayer.addEventListener("timeupdate", () => {
+
+        const tiempoActual = videoPlayer.currentTime;
+
+        if (!Number.isFinite(tiempoActual)) return;
+
+        if (Math.abs(tiempoActual - ultimoTiempoVideo) > 0.05) {
+
+            ultimoTiempoVideo = tiempoActual;
+            ultimoCambioVideo = Date.now();
+
+            if (congelamientoDetectado) {
+
+                console.log(
+                    "TVLEGAL: transmisión recuperada"
+                );
+
+                congelamientoDetectado = false;
+                inicioCongelamiento = 0;
+                recuperacionEnCurso = false;
+
+                limpiarRecuperacion();
+            }
+        }
+    });
+
+    videoPlayer.addEventListener("playing", () => {
+
+        console.log(
+            "TVLEGAL: reproducción activa"
+        );
+
+        congelamientoDetectado = false;
+        recuperacionEnCurso = false;
+        inicioCongelamiento = 0;
+
+        ultimoTiempoVideo =
+            Number.isFinite(videoPlayer.currentTime)
+                ? videoPlayer.currentTime
+                : 0;
+
+        ultimoCambioVideo = Date.now();
+
+        limpiarRecuperacion();
+    });
+
+    videoPlayer.addEventListener("waiting", () => {
+
+        if (videoPlayer.paused) return;
+
+        if (!inicioCongelamiento) {
+
+            inicioCongelamiento = Date.now();
+            congelamientoDetectado = true;
+
+            console.log(
+                "TVLEGAL: posible congelamiento detectado"
+            );
+        }
+
+        programarRecuperacionProfesional();
+    });
+
+    videoPlayer.addEventListener("stalled", () => {
+
+        if (videoPlayer.paused) return;
+
+        if (!inicioCongelamiento) {
+
+            inicioCongelamiento = Date.now();
+            congelamientoDetectado = true;
+
+            console.log(
+                "TVLEGAL: stalled detectado"
+            );
+        }
+
+        programarRecuperacionProfesional();
+    });
+
+    vigilanciaCongelamientoTimer = setInterval(() => {
+
+        if (videoPlayer.paused) return;
+        if (!ultimaURLReproduciendo) return;
+
+        const ahora = Date.now();
+        const sinAvance = ahora - ultimoCambioVideo;
+
+        /*
+         * Congelamiento silencioso:
+         * el video no avanza aunque no exista waiting/stalled.
+         */
+        if (
+            sinAvance >= 6000 &&
+            videoPlayer.readyState < 3
+        ) {
+
+            if (!inicioCongelamiento) {
+
+                inicioCongelamiento = ahora;
+                congelamientoDetectado = true;
+
+                console.log(
+                    "TVLEGAL: congelamiento silencioso detectado"
+                );
+            }
+
+            programarRecuperacionProfesional();
+        }
+
+    }, 1000);
+}
+
+function programarRecuperacionProfesional() {
+
+    if (recuperacionEnCurso) return;
+    if (!inicioCongelamiento) return;
+
+    limpiarRecuperacion();
+
+    /*
+     * NIVEL 1
+     * Intentar continuar sin recargar el canal.
+     */
+    recuperacionTimer = setTimeout(async () => {
+
+        if (videoPlayer.paused) return;
+        if (recuperacionEnCurso) return;
+
+        const duracion =
+            Date.now() - inicioCongelamiento;
+
+        if (duracion < 3000) return;
+
+        recuperacionEnCurso = true;
+
+        console.log(
+            "TVLEGAL: RECUPERACIÓN NIVEL 1"
+        );
+
+        try {
+
+            await videoPlayer.play();
+
+        } catch (e) {
+
+            console.log(
+                "TVLEGAL: nivel 1 no pudo continuar"
+            );
+        }
+
+        recuperacionEnCurso = false;
+
+        /*
+         * NIVEL 2
+         * Solo recargar si realmente sigue detenido.
+         */
+        recuperacionFuerteTimer = setTimeout(async () => {
+
+            if (videoPlayer.paused) return;
+            if (!ultimaURLReproduciendo) return;
+            if (recuperacionEnCurso) return;
+
+            const tiempoSinAvance =
+                Date.now() - ultimoCambioVideo;
+
+            if (tiempoSinAvance < 7000) return;
+
+            recuperacionEnCurso = true;
+
+            console.log(
+                "TVLEGAL: RECUPERACIÓN NIVEL 2"
+            );
+
+            try {
+
+                if (shakaPlayer) {
+                    await shakaPlayer.unload();
+                }
+
+                await shakaPlayer.load(
+                    ultimaURLReproduciendo
+                );
+
+                await videoPlayer.play();
+
+                console.log(
+                    "TVLEGAL: transmisión recuperada"
+                );
+
+                congelamientoDetectado = false;
+                inicioCongelamiento = 0;
+
+            } catch (e) {
+
+                console.error(
+                    "TVLEGAL: recuperación nivel 2 falló",
+                    e
+                );
+
+            } finally {
+
+                recuperacionEnCurso = false;
+            }
+
+        }, 6500);
+
+    }, 3000);
+}
+
+iniciarVigilanciaStream();
+
+console.log(
+    "TVLEGAL: MOTOR DE RECUPERACIÓN PROFESIONAL ACTIVO"
+);
+
+/* =========================================================
+   PRECARGA AGRESIVA DEL CANAL SELECCIONADO
+   ========================================================= */
+
+let shakaPreloadPlayer = null;
+let preloadVideo = null;
+let canalPreloadActual = null;
+let preloadTimer = null;
+let preloadGeneracion = 0;
+
+
+
+/* =========================================================
+   PRECARGA AGRESIVA
+   ========================================================= */
+
+async function prepararCanal(canal) {
+
+    if (!canal || !canal.url) {
+        return;
+    }
+
+    const generacion = ++preloadGeneracion;
+
+    clearTimeout(preloadTimer);
+
+    preloadTimer = setTimeout(async () => {
+
+        if (generacion !== preloadGeneracion) {
+            return;
+        }
+
+        if (
+            canalPreloadActual === canal.url &&
+            shakaPreloadPlayer
+        ) {
+            return;
+        }
+
+        try {
+
+            console.log(
+                "PRECARGANDO:",
+                canal.nombre
+            );
+
+            canalPreloadActual = canal.url;
+
+            if (!preloadVideo) {
+
+                preloadVideo =
+                    document.createElement("video");
+
+                preloadVideo.muted = true;
+                preloadVideo.playsInline = true;
+                preloadVideo.preload = "auto";
+
+                preloadVideo.style.position = "fixed";
+                preloadVideo.style.width = "1px";
+                preloadVideo.style.height = "1px";
+                preloadVideo.style.opacity = "0";
+                preloadVideo.style.pointerEvents = "none";
+                preloadVideo.style.left = "-10px";
+                preloadVideo.style.top = "-10px";
+
+                document.body.appendChild(
+                    preloadVideo
+                );
+            }
+
+            if (!shakaPreloadPlayer) {
+
+                shakaPreloadPlayer =
+                    new shaka.Player(
+                        preloadVideo
+                    );
+
+                shakaPreloadPlayer.configure({
+                    streaming: {
+
+                        bufferingGoal: 3,
+                        rebufferingGoal: 1.5,
+                        bufferBehind: 5,
+
+                        retryParameters: {
+                            maxAttempts: 4,
+                            baseDelay: 200,
+                            backoffFactor: 1.3,
+                            fuzzFactor: 0.1
+                        },
+
+                        lowLatencyMode: false
+                    }
+                });
+
+                shakaPreloadPlayer.addEventListener(
+                    "error",
+                    event => {
+
+                        console.warn(
+                            "Error precarga:",
+                            event.detail
+                        );
+
+                    }
+                );
+            }
+
+            await shakaPreloadPlayer.load(
+                canal.url
+            );
+
+            if (generacion !== preloadGeneracion) {
+                return;
+            }
+
+            console.log(
+                "PRECARGA LISTA:",
+                canal.nombre
+            );
+
+        } catch (error) {
+
+            console.warn(
+                "No se pudo precargar:",
+                canal.nombre,
+                error
+            );
+
+        }
+
+    }, 250);
+}
 
 
 /* =========================================================
@@ -234,6 +823,15 @@ async function cargarLista() {
         if (canalesVisibles.length > 0) {
 
             seleccionarCanal(0);
+
+            console.log(
+                "Preparando primer canal:",
+                canalesVisibles[0].nombre
+            );
+
+            reproducir(
+                canalesVisibles[0]
+            );
 
         }
 
@@ -605,9 +1203,24 @@ function actualizarEnfoque() {
 
 async function reproducir(canal) {
 
+    /*
+     * Cada reproducción recibe una generación.
+     * Si el usuario cambia rápidamente de canal,
+     * las cargas anteriores quedan invalidadas.
+     */
+    const miGeneracion = ++generacionReproduccion;
+
+    /*
+     * Si existe una carga anterior, la cancelamos antes
+     * de comenzar el nuevo canal.
+     */
+    await cancelarCargaAnterior();
+
     console.log(
         "Reproduciendo:",
-        canal.nombre
+        canal.nombre,
+        "| generación:",
+        miGeneracion
     );
 
     indiceReproduciendo =
@@ -644,6 +1257,8 @@ async function reproducir(canal) {
 
     try {
 
+        ultimaURLReproduciendo = canal.url;
+
         if (!window.shaka) {
             throw new Error(
                 "Shaka Player no está cargado"
@@ -661,34 +1276,135 @@ async function reproducir(canal) {
 
             shakaPlayer.configure({
                 streaming: {
-                    bufferingGoal: 8,
-                    rebufferingGoal: 3,
-                    bufferBehind: 30,
+
+                    /* ARRANQUE MÁS RÁPIDO */
+                    bufferingGoal: 3,
+                    rebufferingGoal: 1.5,
+
+                    /* MENOS DATOS ATRASADOS */
+                    bufferBehind: 5,
+
+                    /* INTENTOS RÁPIDOS */
                     retryParameters: {
-                        maxAttempts: 10,
-                        baseDelay: 400,
-                        backoffFactor: 1.5,
-                        fuzzFactor: 0.2
-                    }
+                        maxAttempts: 6,
+                        baseDelay: 200,
+                        backoffFactor: 1.3,
+                        fuzzFactor: 0.1
+                    },
+
+                    /* MODO PARA STREAM EN VIVO */
+                    lowLatencyMode: false
                 }
             });
 
             shakaPlayer.addEventListener(
                 "error",
                 event => {
+
+                    const error = event.detail;
+
                     console.error(
-                        "Error Shaka:",
-                        event.detail
+                        "TVLEGAL: Error Shaka:",
+                        error
                     );
+
+                    /*
+                     * El motor profesional de recuperación
+                     * se encarga de los fallos del stream.
+                     * No intentamos recuperar si el usuario
+                     * ya cambió de canal.
+                     */
+                    if (
+                        miGeneracion !== generacionReproduccion ||
+                        !ultimaURLReproduciendo
+                    ) {
+                        console.log(
+                            "TVLEGAL: error descartado por cambio de canal"
+                        );
+                        return;
+                    }
+
+                    /*
+                     * Guardamos información del último error
+                     * para diagnóstico y recuperación.
+                     */
+                    window.tvlegalUltimoError = {
+                        timestamp: Date.now(),
+                        code: error?.code || null,
+                        category: error?.category || null,
+                        severity: error?.severity || null
+                    };
+
+                    console.warn(
+                        "TVLEGAL: stream con error",
+                        window.tvlegalUltimoError
+                    );
+
+                    /*
+                     * Conectamos el error de Shaka
+                     * al motor profesional de recuperación.
+                     */
+                    programarRecuperacionError(
+                        miGeneracion,
+                        canal.url
+                    );
+
                 }
             );
+
         }
+
+        console.log(
+            "Cargando URL:",
+            canal.url
+        );
+
+        /*
+         * Cargamos el nuevo canal directamente.
+         * No destruimos el reproductor Shaka,
+         * para evitar perder tiempo creando otro.
+         */
+        /*
+         * La carga pertenece a esta generación.
+         * Si el usuario cambió de canal mientras
+         * Shaka estaba cargando, cancelamos el resultado.
+         */
+        cargaAnteriorEnCurso = true;
 
         await shakaPlayer.load(
             canal.url
         );
 
-        await videoPlayer.play();
+        cargaAnteriorEnCurso = false;
+
+        if (miGeneracion !== generacionReproduccion) {
+
+            console.log(
+                "TVLEGAL: carga anterior descartada",
+                miGeneracion,
+                "!=",
+                generacionReproduccion
+            );
+
+            return;
+        }
+
+        /*
+         * El canal sigue siendo el seleccionado.
+         * Intentar reproducir inmediatamente.
+         */
+        try {
+
+            await videoPlayer.play();
+
+        } catch (playError) {
+
+            console.warn(
+                "Autoplay/reproducción:",
+                playError
+            );
+
+        }
 
         btnPlay.textContent =
             "❚❚ PAUSAR";
